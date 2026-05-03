@@ -4,16 +4,8 @@ description: "Release new crate version"
 runs:
   using: composite
   steps:
-    - uses: komrad-company/Kontinuous-integration/.github/actions/rust/setup-toolchain@main
-    - uses: komrad-company/Kontinuous-integration/.github/actions/rust/build@main
-      with:
-        release: 'true'
-        artifact_name: ${{ github.ref_name}}_build
-
-
-    - uses: actions/download-artifact@v4
-      with:
-        name: ${{ github.ref_name}}_build
+    - run: cargo build --release
+      shell: bash
 
     - uses: softprops/action-gh-release@v1
       if: ${{ github.event.base_ref == 'refs/head/main' }}

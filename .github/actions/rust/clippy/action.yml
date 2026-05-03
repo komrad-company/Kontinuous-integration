@@ -4,8 +4,6 @@ description: "Run clippy for crate"
 runs:
     using: "composite"
     steps:
-        - uses: komrad-company/Kontinuous-integration/.github/actions/rust/setup-toolchain@main
-
         - run: cargo clippy -- -D warnings
           shell: bash
 
