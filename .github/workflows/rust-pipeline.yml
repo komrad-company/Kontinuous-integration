@@ -7,11 +7,11 @@ jobs:
   rust-security: # TODO transform on action
     runs-on:
       labels: komrad-runners
-    name: cargo deny (licences + bans + advisories)
-
     steps:
       - uses: actions/checkout@v5
-      - uses: EmbarkStudios/cargo-deny-action@v2
+
+      - uses: komrad-company/Kompile-Konquer/.github/actions/rust/deny@main
+
 
   build:
     needs:
@@ -19,7 +19,7 @@ jobs:
     runs-on:
       labels: komrad-runners
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: komrad-company/Kompile-Konquer/.github/actions/rust/build@main
 
@@ -28,7 +28,7 @@ jobs:
     runs-on:
       labels: komrad-runners
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: komrad-company/Kompile-Konquer/.github/actions/rust/tests@main
 
@@ -37,7 +37,7 @@ jobs:
     runs-on:
       labels: komrad-runners
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: komrad-company/Kompile-Konquer/.github/actions/rust/fmt@main
         with:
@@ -52,5 +52,5 @@ jobs:
       - lint
     if: ${{ github.ref_type == 'tag' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: komrad-company/Kompile-Konquer/.github/actions/rust/release@main
