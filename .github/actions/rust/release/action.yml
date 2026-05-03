@@ -7,8 +7,8 @@ runs:
     - run: cargo build --release
       shell: bash
 
-    - uses: softprops/action-gh-release@v1
-      # if: ${{ github.event.base_ref == 'refs/heads/main' }}
+    - uses: softprops/action-gh-release@v3
       with:
         tag_name: ${{ github.ref_name }}
         files: target/release/*
+        prerelease: ${{ contains(github.ref_name, '-rc') }}
