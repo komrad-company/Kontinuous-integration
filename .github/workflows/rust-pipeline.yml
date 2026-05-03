@@ -39,24 +39,11 @@ jobs:
 
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/clippy@main
 
-  build:
-    needs:
-      - test
-      - lint
-    runs-on:
-      labels: komrad-runners
-    container:
-      image: rust:latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/build@main
-
-
   release:
     runs-on: ubuntu-latest
     needs:
-      - build
+      - lint
+      - test
     if: ${{ github.ref_type == 'tag' }}
     steps:
       - uses: actions/checkout@v5
