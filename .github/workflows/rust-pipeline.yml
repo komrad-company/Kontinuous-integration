@@ -7,7 +7,7 @@ jobs:
   rust-security: # TODO transform on action
     runs-on:
       labels: komrad-runners
-   steps:
+    steps:
       - uses: actions/checkout@v5
 
       - uses: komrad-company/Kompile-Konquer/.github/actions/rust/deny@main
