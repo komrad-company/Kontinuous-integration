@@ -4,6 +4,4 @@ description: "Verify compliance of project"
 runs:
     using: "composite"
     steps:
-        - uses: komrad-company/Kontinuous-integration/.github/actions/rust/setup-toolchain@main
-
         - uses: EmbarkStudios/cargo-deny-action@v2
