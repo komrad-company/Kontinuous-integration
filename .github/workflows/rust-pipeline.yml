@@ -13,20 +13,8 @@ jobs:
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/deny@main
 
 
-  build:
-    needs:
-      - rust-security
-    runs-on:
-      labels: komrad-runners
-    container:
-      image: rust:latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/build@main
-
   test:
-    needs: build
+    needs: rust-security
     runs-on:
       labels: komrad-runners
     container:
@@ -37,7 +25,7 @@ jobs:
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/tests@main
 
   lint:
-    needs: build
+    needs: rust-security
     runs-on:
       labels: komrad-runners
     container:
@@ -51,11 +39,24 @@ jobs:
 
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/clippy@main
 
-  release:
-    runs-on: ubuntu-latest
+  build:
     needs:
       - test
       - lint
+    runs-on:
+      labels: komrad-runners
+    container:
+      image: rust:latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/build@main
+
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - build
     if: ${{ github.ref_type == 'tag' }}
     steps:
       - uses: actions/checkout@v5
