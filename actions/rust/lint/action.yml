@@ -1,0 +1,15 @@
+name: Rust - Run lint
+description: "Run lint for crate"
+
+runs:
+    using: "composite"
+    steps:
+        - uses: komrad-company/workflows/actions/rust/setup-toolchain@main
+
+        - uses: actions/download-artifact@v4
+          with:
+            name: build
+
+        - run: cargo fmt --check
+          shell: bash
+

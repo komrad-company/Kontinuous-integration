@@ -1,0 +1,20 @@
+name: Rust - Build crate
+description: "Build the crate for other actions"
+
+inputs:
+    release:
+        description: "Build release version"
+        default: false
+
+runs:
+    using: "composite"
+    steps:
+        - uses: komrad-company/workflows/actions/rust/setup-toolchain@main
+        - run: cargo build ${{ inputs.release == 'true' && '--release' || '' }}
+          shell: bash
+
+        - uses: actions/upload-artifact@v4
+          with:
+            name: build
+            path: ${{ inputs.release == 'true' && 'target/release/' || 'target/debug' }}
+            retention-days: 1
