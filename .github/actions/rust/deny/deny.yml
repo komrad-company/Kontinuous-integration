@@ -1,0 +1,17 @@
+name: Rust - Cargo deny
+description: "Verify compliance of project"
+
+runs:
+    using: "composite"
+    steps:
+        - uses: komrad-company/Kompile-Konquer/.github/actions/rust/setup-toolchain@main
+
+        - uses: actions/checkout@v5
+          with:
+            repository: komrad-company/policies
+            path: policies
+
+        - uses: EmbarkStudios/cargo-deny-action@v2
+          with:
+            manifest-path: Cargo.toml
+            config: policies/rust/deny.toml
