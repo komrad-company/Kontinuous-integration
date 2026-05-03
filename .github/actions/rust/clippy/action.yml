@@ -4,6 +4,9 @@ description: "Run clippy for crate"
 runs:
     using: "composite"
     steps:
+        - run: rustup component add clippy
+          shell: bash
+
         - run: cargo clippy -- -D warnings
           shell: bash
 
