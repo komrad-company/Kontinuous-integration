@@ -3,16 +3,19 @@ description: "Run lint for crate"
 
 inputs:
   continue-on-error:
-    default: 'false'
+    default: false
 
 
 runs:
     using: "composite"
     steps:
-        - run: rustup component add fmt
-          shell: bash
+        - uses: komrad-company/Kontinuous-integration/.github/actions/rust/setup-toolchain@main
+
+        - uses: actions/download-artifact@v4
+          with:
+            name: build
 
         - run: cargo fmt --check
-          continue-on-error: ${{ inputs.continue-on-error == 'true' }}
+          continue-on-error: ${{ inputs.continue-continue-on-error }}
           shell: bash
 

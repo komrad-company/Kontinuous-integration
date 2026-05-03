@@ -4,8 +4,11 @@ description: "Run clippy for crate"
 runs:
     using: "composite"
     steps:
-        - run: rustup component add clippy
-          shell: bash
+        - uses: komrad-company/Kontinuous-integration/.github/actions/rust/setup-toolchain@main
+
+        - uses: actions/download-artifact@v4
+          with:
+            name: build
 
         - run: cargo clippy -- -D warnings
           shell: bash

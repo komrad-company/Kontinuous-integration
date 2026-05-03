@@ -1,0 +1,16 @@
+name: Rust - Setup toolchain
+description: "Prepare Rust toolchain"
+
+inputs:
+    toolchain_components:
+        description: Rust toolchain components to use
+        type: string
+        default: ''
+
+runs:
+    using: "composite"
+    steps:
+        - name: Setup Rust
+          uses: dtolnay/rust-toolchain@stable
+          with:
+            components: ${{ inputs.toolchain_components }}
