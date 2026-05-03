@@ -40,7 +40,10 @@ jobs:
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/clippy@main
 
   release:
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: komrad-runners
+    container:
+      image: rust:latest
     needs:
       - lint
       - test
