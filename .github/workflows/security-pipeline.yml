@@ -9,7 +9,8 @@ on:
 jobs:
   secret_detection:
     name: gitleaks
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: komrad-runners
     steps:
       - uses: actions/checkout@v5
         with:
