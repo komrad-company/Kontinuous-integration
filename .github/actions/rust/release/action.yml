@@ -8,7 +8,7 @@ runs:
       shell: bash
 
     - uses: softprops/action-gh-release@v1
-      if: ${{ github.event.base_refs == 'refs/head/main' }}
+      if: ${{ github.event.base_ref == 'refs/heads/main' }}
       with:
         tag_name: ${{ github.ref_name }}
         files: target/release/*
