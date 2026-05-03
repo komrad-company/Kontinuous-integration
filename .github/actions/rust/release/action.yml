@@ -1,10 +1,6 @@
 name: Rust - Release
 description: "Release new crate version"
 
-inputs:
- tag:
-    required: true
-
 runs:
   using: composite
   steps:
@@ -22,5 +18,5 @@ runs:
     - uses: softprops/action-gh-release@v1
       if: ${{ github.event.base_ref == 'refs/head/main' }}
       with:
-        tag_name: ${{ inputs.tag }}
+        tag_name: ${{ github.ref_name }}
         files: target/release/*
