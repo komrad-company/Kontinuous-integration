@@ -9,7 +9,7 @@ inputs:
 runs:
     using: "composite"
     steps:
-        - run: rust component add rustfmt
+        - run: rustup component add rustfmt
           shell: bash
 
         - run: cargo fmt --check
