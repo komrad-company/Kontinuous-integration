@@ -1,15 +1,21 @@
 name: Rust - Run lint
 description: "Run lint for crate"
 
+inputs:
+  continue-on-error:
+    default: false
+
+
 runs:
     using: "composite"
     steps:
-        - uses: komrad-company/workflows/actions/rust/setup-toolchain@main
+        - uses: komrad-company/Kompile-Konquer/actions/rust/setup-toolchain@main
 
         - uses: actions/download-artifact@v4
           with:
             name: build
 
         - run: cargo fmt --check
+          continue-on-error: ${{ inputs.continue-continue-on-error }}
           shell: bash
 

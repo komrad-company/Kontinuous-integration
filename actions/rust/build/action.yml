@@ -9,7 +9,7 @@ inputs:
 runs:
     using: "composite"
     steps:
-        - uses: komrad-company/workflows/actions/rust/setup-toolchain@main
+        - uses: komrad-company/Kompile-Konquer/actions/rust/setup-toolchain@main
         - run: cargo build ${{ inputs.release == 'true' && '--release' || '' }}
           shell: bash
 
