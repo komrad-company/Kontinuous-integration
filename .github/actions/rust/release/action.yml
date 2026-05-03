@@ -8,8 +8,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: komrad-company/Kompile-Konquer/actions/rust/setup-toolchain@main
-    - uses: komrad-company/Kompile-Konquer/actions/rust/build@main
+    - uses: komrad-company/Kompile-Konquer/.github/actions/rust/setup-toolchain@main
+    - uses: komrad-company/Kompile-Konquer/.github/actions/rust/build@main
       with:
         release: 'true'
         artifact_name: ${{ github.ref_name}}_build

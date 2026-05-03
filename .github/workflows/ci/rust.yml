@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: komrad-company/Kompile-Konquer/actions/rust/build@main
+      - uses: komrad-company/Kompile-Konquer/.github/actions/rust/build@main
 
   test:
     needs: build
@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: komrad-company/Kompile-Konquer/actions/rust/tests@main
+      - uses: komrad-company/Kompile-Konquer/.github/actions/rust/tests@main
 
   lint:
     needs: build
@@ -29,11 +29,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: komrad-company/Kompile-Konquer/actions/rust/fmt@main
+      - uses: komrad-company/Kompile-Konquer/.github/actions/rust/fmt@main
         with:
           continue-on-error: false
 
-      - uses: komrad-company/Kompile-Konquer/actions/rust/clippy@main
+      - uses: komrad-company/Kompile-Konquer/.github/actions/rust/clippy@main
 
   release:
     runs-on: ubuntu-latest
@@ -41,4 +41,4 @@ jobs:
     steps:
       - uses: action/checkout@v4
 
-      - uses: komrad-company/Kompile-Konquer/actions/rust/release@main
+      - uses: komrad-company/Kompile-Konquer/.github/actions/rust/release@main

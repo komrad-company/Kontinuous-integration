@@ -1,0 +1,14 @@
+name: Pipeline
+
+on:
+  workflow_call:
+
+jobs:
+  secret-detection:
+    uses: komrad-company/Kompile-Konquer/.github/workflows/security/secret_detection.yml@main
+
+  security-rust:
+    uses: komrad-company/Kompile-Konquer/.github/workflows/security/rust.yml@main
+
+  ci-rust:
+    uses: komrad-company/Kompile-Konquer/.github/workflows/ci/rust.yml@main
