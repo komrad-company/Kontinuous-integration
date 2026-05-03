@@ -5,6 +5,8 @@ inputs:
     release:
         description: "Build release version"
         default: false
+    artifact_name:
+      default: build
 
 runs:
     using: "composite"
@@ -15,6 +17,6 @@ runs:
 
         - uses: actions/upload-artifact@v4
           with:
-            name: build
+            name: ${{ inputs.artifact_name }}
             path: ${{ inputs.release == 'true' && 'target/release/' || 'target/debug' }}
             retention-days: 1
