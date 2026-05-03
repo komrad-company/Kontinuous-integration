@@ -6,11 +6,4 @@ runs:
     steps:
         - uses: komrad-company/Kompile-Konquer/.github/actions/rust/setup-toolchain@main
 
-        - uses: actions/checkout@v5
-          with:
-            repository: komrad-company/policies
-            path: policies
-
         - uses: EmbarkStudios/cargo-deny-action@v2
-          with:
-            manifest-path: Cargo.toml
