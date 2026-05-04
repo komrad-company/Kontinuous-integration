@@ -1,0 +1,51 @@
+name: Pipeline (gRPC)
+
+on:
+  workflow_call:
+
+jobs:
+  rust-security:
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - uses: actions/checkout@v5
+      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/deny@main
+
+  test:
+    needs: rust-security
+    runs-on:
+      labels: komrad-runners
+    container:
+      image: rust:latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: komrad-company/Kontinuous-integration/.github/actions/proto/setup@main
+      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/tests@main
+
+  lint:
+    needs: rust-security
+    runs-on:
+      labels: komrad-runners
+    container:
+      image: rust:latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: komrad-company/Kontinuous-integration/.github/actions/proto/setup@main
+      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/fmt@main
+        with:
+          continue-on-error: false
+      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/clippy@main
+
+  release:
+    runs-on:
+      labels: komrad-runners
+    container:
+      image: rust:latest
+    needs:
+      - lint
+      - test
+    if: ${{ github.ref_type == 'tag' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: komrad-company/Kontinuous-integration/.github/actions/proto/setup@main
+      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/release@main
