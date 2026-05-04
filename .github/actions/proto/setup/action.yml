@@ -1,0 +1,9 @@
+name: Proto - Setup
+description: "Install protobuf compiler (required by tonic-prost-build)"
+
+runs:
+    using: "composite"
+    steps:
+        - name: Install protobuf compiler
+          run: apt-get update -y && apt-get install -y --no-install-recommends protobuf-compiler && rm -rf /var/lib/apt/lists/*
+          shell: bash
