@@ -22,9 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install build dependencies
-        run: apt-get update -y && apt-get install -y --no-install-recommends protobuf-compiler && rm -rf /var/lib/apt/lists/*
-
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/tests@main
 
   lint:
@@ -35,9 +32,6 @@ jobs:
       image: rust:latest
     steps:
       - uses: actions/checkout@v5
-
-      - name: Install build dependencies
-        run: apt-get update -y && apt-get install -y --no-install-recommends protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/fmt@main
         with:
@@ -56,8 +50,4 @@ jobs:
     if: ${{ github.ref_type == 'tag' }}
     steps:
       - uses: actions/checkout@v5
-
-      - name: Install build dependencies
-        run: apt-get update -y && apt-get install -y --no-install-recommends protobuf-compiler && rm -rf /var/lib/apt/lists/*
-
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/release@main
