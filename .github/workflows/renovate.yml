@@ -1,0 +1,61 @@
+name: Renovate
+
+on:
+  schedule:
+    # Every Monday at 03:00 UTC (~04:00 Europe/Paris winter, ~05:00 summer).
+    # Stays under the "before 6am Europe/Paris" window declared in renovate.json.
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Renovate log level'
+        required: false
+        default: 'info'
+        type: choice
+        options:
+          - debug
+          - info
+          - warn
+          - error
+      dryRun:
+        description: 'Dry run (no PR / branch creation)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'full'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  renovate:
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: renovatebot/github-action@v40.2.0
+        with:
+          configurationFile: .github/renovate.json
+          # Prefer a dedicated PAT (RENOVATE_TOKEN) so PRs created by Renovate
+          # trigger downstream CI; fall back to GITHUB_TOKEN otherwise.
+          token: ${{ secrets.RENOVATE_TOKEN || secrets.GITHUB_TOKEN }}
+        env:
+          LOG_LEVEL: ${{ inputs.logLevel || 'info' }}
+          RENOVATE_DRY_RUN: ${{ inputs.dryRun || 'false' }}
+
+  notify-slack:
+    needs: renovate
+    if: ${{ always() && needs.renovate.result == 'failure' }}
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - uses: actions/checkout@v5
+      - uses: komrad-company/Kontinuous-integration/.github/actions/notify/slack@main
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          status: failure
