@@ -7,13 +7,18 @@ This repository is the CI infrastructure of the Komrad collective. It provides s
 
 ```
 your-repo/.github/workflows/ci.yml
-    └── uses: rust-pipeline.yml
-             ├── rust/deny       (no traitors in the dependency tree)
-             ├── rust/tests      (code that does not pass tests does not exist)
-             ├── rust/fmt        (the collective enforces a single formatting style)
-             ├── rust/clippy     (warnings are errors. there are no warnings.)
-             ├── rust/release    (the binary is published. the tag is law.)
-             └── notify/slack    (failure is reported. always.)
+    ├── uses: rust-security-pipeline.yml
+    │            ├── rust/deny       (no traitors in the dependency tree)
+    │            └── rust/geiger     (unsafe code is counted, not ignored)
+    ├── uses: rust-pipeline.yml
+    │            ├── rust/tests      (code that does not pass tests does not exist)
+    │            ├── rust/fmt        (the collective enforces a single formatting style)
+    │            ├── rust/clippy     (warnings are errors. there are no warnings.)
+    │            └── rust/release    (the binary is published. the tag is law.)
+    ├── uses: security-pipeline.yml
+    │            └── gitleaks        (no credential shall be committed)
+    └── uses: notify-pipeline.yml
+                 └── notify/slack    (failure is reported. always.)
 ```
 
 ---
@@ -22,25 +27,40 @@ your-repo/.github/workflows/ci.yml
 
 ### `rust-pipeline.yml`
 
-The standard CI pipeline for Rust crates. The collective runs security first. Nothing else proceeds until the dependency tree is cleared.
+The standard CI pipeline for Rust crates. Tests and linting run in parallel. Release is gated on both.
 
 ```yaml
 jobs:
   ci:
     uses: komrad-company/Kontinuous-integration/.github/workflows/rust-pipeline.yml@main
-    secrets:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
 **Job order — not negotiable:**
 
 | Job | Depends on | Condition |
 |---|---|---|
-| `rust-security` | — | always |
-| `test` | `rust-security` | always |
-| `lint` | `rust-security` | always |
+| `test` | — | always |
+| `lint` | — | always |
 | `release` | `lint`, `test` | tag push only |
-| `notify-slack` | all | on any failure |
+
+---
+
+### `rust-security-pipeline.yml`
+
+Security audit for Rust crates. Runs `cargo-deny` and `cargo-geiger` in parallel — the collective tolerates neither unlicensed dependencies nor unacknowledged unsafe code.
+
+```yaml
+jobs:
+  ci:
+    uses: komrad-company/Kontinuous-integration/.github/workflows/rust-security-pipeline.yml@main
+```
+
+**Jobs:**
+
+| Job | Tool | What it checks |
+|---|---|---|
+| `rust-deny` | `cargo-deny` | license compliance, advisories, duplication |
+| `rust-geiger` | `cargo-geiger` | unsafe code across the full dependency graph |
 
 ---
 
@@ -52,8 +72,6 @@ Same discipline as `rust-pipeline.yml`. Additionally installs the protobuf compi
 jobs:
   ci:
     uses: komrad-company/Kontinuous-integration/.github/workflows/rust-grpc-pipeline.yml@main
-    secrets:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
 ---
@@ -66,9 +84,27 @@ Secrets detection across the full git history via [gitleaks](https://github.com/
 jobs:
   security:
     uses: komrad-company/Kontinuous-integration/.github/workflows/security-pipeline.yml@main
+```
+
+---
+
+### `notify-pipeline.yml`
+
+Transmits the pipeline status to Slack. Fires on any non-success outcome — failure or cancellation. Success is expected; it warrants no dispatch.
+
+```yaml
+jobs:
+  notify:
+    uses: komrad-company/Kontinuous-integration/.github/workflows/notify-pipeline.yml@main
+    with:
+      status: ${{ needs.ci.result }}
     secrets:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
+
+| Input | Required | Description |
+|---|---|---|
+| `status` | yes | Pipeline status to report (`success`, `failure`, `cancelled`) |
 
 ---
 
@@ -80,6 +116,16 @@ Runs [`cargo-deny`](https://github.com/EmbarkStudios/cargo-deny). Every dependen
 
 ```yaml
 - uses: komrad-company/Kontinuous-integration/.github/actions/rust/deny@main
+```
+
+---
+
+### `rust/geiger`
+
+Runs [`cargo-geiger`](https://github.com/rust-secure-code/cargo-geiger). Counts unsafe code blocks across the full dependency tree. The collective does not pretend unsafe code does not exist — it counts it.
+
+```yaml
+- uses: komrad-company/Kontinuous-integration/.github/actions/rust/geiger@main
 ```
 
 ---
