@@ -1,12 +1,12 @@
 name: Slack - CI notification
-description: "Envoie une alerte Slack avec le statut de la CI"
+description: "Sends a Slack alert with the CI status"
 
 inputs:
   webhook-url:
-    description: "URL du webhook Slack (incoming webhook)"
+    description: "Slack webhook URL (incoming webhook)"
     required: true
   status:
-    description: "Statut à notifier (success, failure, cancelled)"
+    description: "Status to notify (success, failure, cancelled)"
     required: true
     default: failure
 
@@ -21,7 +21,7 @@ runs:
         webhook-type: incoming-webhook
         payload: |
           {
-            "text": "CI ${{ inputs.status }} — ${{ github.repository }}@${{ github.ref_name }}",
+            "text": "☭ URGENT TRANSMISSION FROM THE CENTRAL COMMITTEE: CI ${{ inputs.status }} — ${{ github.repository }}@${{ github.ref_name }}. FAILURE IS NOT AN OPTION. THE PARTY IS WATCHING. ☭",
             "blocks": [
               {
                 "type": "header",
@@ -36,7 +36,7 @@ runs:
                   { "type": "mrkdwn", "text": "*Branch / tag*\n`${{ github.ref_name }}`" },
                   { "type": "mrkdwn", "text": "*Commit*\n`${{ github.sha }}`" },
                   { "type": "mrkdwn", "text": "*Workflow*\n${{ github.workflow }}" },
-                  { "type": "mrkdwn", "text": "*Acteur*\n${{ github.actor }}" }
+                  { "type": "mrkdwn", "text": "*Actor*\n${{ github.actor }}" }
                 ]
               },
               {
@@ -44,7 +44,7 @@ runs:
                 "elements": [
                   {
                     "type": "button",
-                    "text": { "type": "plain_text", "text": "Voir le run" },
+                    "text": { "type": "plain_text", "text": "View run" },
                     "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                   }
                 ]
