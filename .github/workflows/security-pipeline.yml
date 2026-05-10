@@ -5,6 +5,10 @@ permissions:
 
 on:
   workflow_call:
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: false
+        description: "Slack webhook URL for CI alerts (optional)"
 
 jobs:
   secret_detection:
@@ -21,12 +25,15 @@ jobs:
           tar xz -C /tmp -f /tmp/gitleaks.tar.gz gitleaks
           /tmp/gitleaks detect --source . --verbose
 
-  rust_unsafe_scan:
-    name: cargo geiger
+  notify-slack:
+    needs:
+      - secret_detection
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
     runs-on:
       labels: komrad-runners
-    container:
-      image: rust:1.95
     steps:
       - uses: actions/checkout@v5
-      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/geiger@main
+      - uses: komrad-company/Kontinuous-integration/.github/actions/notify/slack@main
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          status: failure
