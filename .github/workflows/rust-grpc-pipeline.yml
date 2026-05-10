@@ -2,6 +2,10 @@ name: Pipeline (gRPC)
 
 on:
   workflow_call:
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: false
+        description: "Slack webhook URL for CI alerts (optional)"
 
 jobs:
   rust-security:
@@ -49,3 +53,19 @@ jobs:
       - uses: actions/checkout@v5
       - uses: komrad-company/Kontinuous-integration/.github/actions/proto/setup@main
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/release@main
+
+  notify-slack:
+    needs:
+      - rust-security
+      - test
+      - lint
+      - release
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - uses: actions/checkout@v5
+      - uses: komrad-company/Kontinuous-integration/.github/actions/notify/slack@main
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          status: failure
