@@ -1,0 +1,12 @@
+name: Rust Security
+
+on:
+  workflow_call:
+
+jobs:
+  rust-security:
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - uses: actions/checkout@v5
+      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/deny@main
