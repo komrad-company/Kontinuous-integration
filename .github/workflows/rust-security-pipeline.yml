@@ -4,9 +4,16 @@ on:
   workflow_call:
 
 jobs:
-  rust-security:
+  rust-deny:
     runs-on:
       labels: komrad-runners
     steps:
       - uses: actions/checkout@v5
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/deny@main
+  rust-geiger:
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - action/checkout@v5
+      - komrad-company/Kontinuous-integration/.github/actions/rust/geiger@main
+
