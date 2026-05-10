@@ -14,6 +14,6 @@ jobs:
     runs-on:
       labels: komrad-runners
     steps:
-      - action/checkout@v5
-      - komrad-company/Kontinuous-integration/.github/actions/rust/geiger@main
+      - uses: actions/checkout@v5
+      - uses: komrad-company/Kontinuous-integration/.github/actions/rust/geiger@main
 
