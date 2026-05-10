@@ -1,0 +1,13 @@
+name: Rust - Cargo geiger
+description: "Detect unsafe Rust code usage across the dependency graph"
+
+runs:
+    using: "composite"
+    steps:
+        - name: Install cargo-geiger
+          run: cargo install cargo-geiger --locked
+          shell: bash
+
+        - name: Run cargo geiger
+          run: cargo geiger
+          shell: bash
