@@ -5,7 +5,7 @@ on:
     secrets:
       SLACK_WEBHOOK_URL:
         required: false
-        description: "Webhook Slack pour les alertes CI (optionnel)"
+        description: "Slack webhook URL for CI alerts (optional)"
 
 jobs:
   rust-security: # TODO transform on action
