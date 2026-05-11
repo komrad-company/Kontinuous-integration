@@ -27,7 +27,7 @@ runs:
                 "type": "header",
                 "text": {
                   "type": "plain_text",
-                  "text": "CI ${{ inputs.status }} — ${{ github.repository }}"
+                  "text": "☭ URGENT TRANSMISSION FROM THE CENTRAL COMMITTEE: CI ${{ inputs.status }} — ${{ github.repository }}@${{ github.ref_name }}. FAILURE IS NOT AN OPTION. THE PARTY IS WATCHING. ☭",
                 }
               },
               {
