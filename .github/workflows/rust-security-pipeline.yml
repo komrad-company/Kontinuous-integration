@@ -13,6 +13,8 @@ jobs:
   rust-geiger:
     runs-on:
       labels: komrad-runners
+    container:
+      image: rust:1.95
     steps:
       - uses: actions/checkout@v5
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/geiger@main
