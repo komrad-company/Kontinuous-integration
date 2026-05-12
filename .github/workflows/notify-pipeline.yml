@@ -1,0 +1,24 @@
+name: Notify
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        description: "Pipeline status to report (success, failure, cancelled)"
+        required: true
+        type: string
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: false
+        description: "Slack webhook URL for CI alerts (optional)"
+
+jobs:
+  notify-slack:
+    if: ${{ inputs.status != 'success' }}
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - uses: komrad-company/Kontinuous-integration/.github/actions/notify/slack@main
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          status: ${{ inputs.status }}
