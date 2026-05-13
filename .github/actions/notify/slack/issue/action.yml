@@ -1,0 +1,48 @@
+name: Slack - Security issue notification
+description: "Sends a Slack alert when a Warwatch issue is opened"
+
+inputs:
+  webhook-url:
+    description: "Slack webhook URL for the security channel"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Send Slack security alert
+      if: ${{ inputs.webhook-url != '' }}
+      uses: slackapi/slack-github-action@v2.0.0
+      with:
+        webhook: ${{ inputs.webhook-url }}
+        webhook-type: incoming-webhook
+        payload: |
+          {
+            "text": "☭ WARWATCH — ${{ github.event.issue.title }}",
+            "blocks": [
+              {
+                "type": "header",
+                "text": { "type": "plain_text", "text": "☭ WARWATCH — SECURITY THREAT DETECTED" }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  { "type": "mrkdwn", "text": "*Repository*\n`${{ github.repository }}`" },
+                  { "type": "mrkdwn", "text": "*Filed by*\n`${{ github.event.issue.user.login }}`" }
+                ]
+              },
+              {
+                "type": "section",
+                "text": { "type": "mrkdwn", "text": "*${{ github.event.issue.title }}*" }
+              },
+              {
+                "type": "actions",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": { "type": "plain_text", "text": "View threat report" },
+                    "url": "${{ github.event.issue.html_url }}"
+                  }
+                ]
+              }
+            ]
+          }
