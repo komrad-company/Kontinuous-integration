@@ -33,7 +33,7 @@ jobs:
   notify-security:
     runs-on:
       labels: komrad-runners
-    if: contains(github.event.issue.labels.*.name, 'Warwatch')
+    if: contains(github.event.issue.labels.*.name, 'Warwatch') && !github.event.repository.private
     steps:
       - uses: komrad-company/Kontinuous-integration/.github/actions/notify/slack/issue@main
         with:
