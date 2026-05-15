@@ -17,6 +17,10 @@ your-repo/.github/workflows/ci.yml
     │            └── rust/release    (the binary is published. the tag is law.)
     ├── uses: security-pipeline.yml
     │            └── gitleaks        (no credential shall be committed)
+    ├── uses: container-pipeline.yml
+    │            └── container/buildah  (the image is built. the tag is law.)
+    ├── uses: container-cleanup-pipeline.yml
+    │            └── GHCR API           (stale sha-* images are purged. the registry stays clean.)
     └── uses: notify-pipeline.yml
                  └── notify/slack    (failure is reported. always.)
 ```
@@ -84,6 +88,75 @@ Secrets detection across the full git history via [gitleaks](https://github.com/
 jobs:
   security:
     uses: komrad-company/Kontinuous-integration/.github/workflows/security-pipeline.yml@main
+```
+
+---
+
+### `container-pipeline.yml`
+
+Builds and publishes OCI images via Buildah. Tag strategy is derived from the calling context — the collective does not guess what you intend to ship.
+
+| Trigger | Tags produced | Push |
+|---|---|---|
+| Pull request | — | no |
+| Push to `develop` | `sha-<short-sha>` | yes |
+| Tag `v*-rc.*` | `X.Y.Z-rc.N` | yes |
+| Tag `v*` | `X.Y.Z`, `X.Y`, `latest` | yes |
+
+**Job order:**
+
+| Job | Depends on | Condition |
+|---|---|---|
+| `container` | — | always |
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `image` | yes | — | Image name without registry or tag (e.g. `korelator`) |
+| `context` | no | `.` | Build context directory |
+| `containerfile` | no | `./Containerfile` | Path to the Containerfile |
+| `platforms` | no | `linux/amd64` | Comma-separated target platforms |
+
+The registry is fixed to `ghcr.io/komrad-company`. The caller must grant `packages: write`.
+
+```yaml
+jobs:
+  container:
+    permissions:
+      contents: read
+      packages: write
+    uses: komrad-company/Kontinuous-integration/.github/workflows/container-pipeline.yml@main
+    with:
+      image: korelator
+```
+
+---
+
+### `container-cleanup-pipeline.yml`
+
+Purges `sha-*` tagged images from GHCR older than a configurable retention window. Every development image not promoted to a release candidate within that window is considered expired. Run on a weekly schedule.
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `image` | yes | — | Image name to clean up (e.g. `korelator`) |
+| `days` | no | `30` | Delete `sha-*` images older than this many days |
+
+| Secret | Required | Description |
+|---|---|---|
+| `KOMRAD_GITHUB_TOKEN` | yes | GitHub PAT with `read:packages` and `delete:packages` scopes |
+
+```yaml
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+
+jobs:
+  cleanup:
+    uses: komrad-company/Kontinuous-integration/.github/workflows/container-cleanup-pipeline.yml@main
+    with:
+      image: korelator
+      days: 30
+    secrets:
+      KOMRAD_GITHUB_TOKEN: ${{ secrets.KOMRAD_GITHUB_TOKEN }}
 ```
 
 ---
@@ -258,6 +331,7 @@ Transmits an urgent dispatch to the Slack channel of the collective when the pip
 
 - **Self-hosted runner** — all jobs target the `komrad-runners` label. The collective runs on its own infrastructure.
 - **`SLACK_WEBHOOK_URL` secret** — optional. If absent, Slack notifications are silently skipped. The pipeline does not fail for lack of a webhook.
+- **`KOMRAD_GITHUB_TOKEN` secret** — required by `container-cleanup-pipeline.yml`. Must be a GitHub PAT with `read:packages` and `delete:packages` scopes. `GITHUB_TOKEN` cannot delete org-level packages and is not a substitute.
 
 ## License
 
