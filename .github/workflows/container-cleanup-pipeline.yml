@@ -1,0 +1,51 @@
+name: Container — Registry Cleanup
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: "Image name to clean up (e.g. korelator)"
+        required: true
+        type: string
+      days:
+        description: "Delete sha-* tagged images older than this many days"
+        required: false
+        type: number
+        default: 30
+    secrets:
+      KOMRAD_GITHUB_TOKEN:
+        required: true
+        description: "GitHub PAT with read:packages and delete:packages scopes"
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - name: Delete stale sha-* images
+        env:
+          GH_TOKEN: ${{ secrets.KOMRAD_GITHUB_TOKEN }}
+          IMAGE: ${{ inputs.image }}
+          DAYS: ${{ inputs.days }}
+        run: |
+          cutoff=$(date -d "-${DAYS} days" --utc +%Y-%m-%dT%H:%M:%SZ)
+          ORG="komrad-company"
+          deleted=0
+
+          while IFS=$'\t' read -r version_id has_sha_tag created_at; do
+            [ "$has_sha_tag" = "true" ] || continue
+            [[ "$created_at" < "$cutoff" ]] || continue
+            gh api --method DELETE \
+              "orgs/${ORG}/packages/container/${IMAGE}/versions/${version_id}"
+            echo "Deleted version ${version_id} (created ${created_at})"
+            deleted=$((deleted + 1))
+          done < <(
+            gh api "orgs/${ORG}/packages/container/${IMAGE}/versions" \
+              --paginate \
+              --jq '.[] | [(.id | tostring), (.metadata.container.tags | map(startswith("sha-")) | any | tostring), .created_at] | @tsv'
+          )
+
+          echo "Purged ${deleted} stale sha-* image version(s) from ${IMAGE}."
