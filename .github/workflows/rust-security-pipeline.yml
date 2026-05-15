@@ -8,7 +8,7 @@ jobs:
     runs-on:
       labels: komrad-runners
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: komrad-company/Kontinuous-integration/.github/actions/rust/deny@main
   # rust-geiger:
   #   runs-on:
