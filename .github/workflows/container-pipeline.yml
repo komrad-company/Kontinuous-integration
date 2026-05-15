@@ -1,0 +1,75 @@
+name: Container Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: "Image name without registry or tag (e.g. korelator)"
+        required: true
+        type: string
+      context:
+        description: "Build context directory"
+        required: false
+        type: string
+        default: "."
+      containerfile:
+        description: "Path to the Containerfile or Dockerfile"
+        required: false
+        type: string
+        default: "./Containerfile"
+      platforms:
+        description: "Comma-separated list of target platforms"
+        required: false
+        type: string
+        default: "linux/amd64"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  container:
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compute tags
+        id: meta
+        run: |
+          short_sha="${GITHUB_SHA:0:7}"
+          push="false"
+          tags="ci-build"
+
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            push="false"
+            tags="ci-build"
+          elif [ "$GITHUB_REF" = "refs/heads/develop" ]; then
+            push="true"
+            tags="sha-${short_sha}"
+          elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+            if echo "$version" | grep -q '\-rc\.'; then
+              push="true"
+              tags="${version}"
+            else
+              major_minor=$(echo "$version" | cut -d. -f1,2)
+              push="true"
+              tags="${version} ${major_minor} latest"
+            fi
+          fi
+
+          echo "push=${push}" >> "$GITHUB_OUTPUT"
+          echo "tags=${tags}" >> "$GITHUB_OUTPUT"
+
+      - uses: komrad-company/Kontinuous-integration/.github/actions/container/buildah@main
+        with:
+          image: ${{ inputs.image }}
+          tags: ${{ steps.meta.outputs.tags }}
+          containerfile: ${{ inputs.containerfile }}
+          context: ${{ inputs.context }}
+          platforms: ${{ inputs.platforms }}
+          push: ${{ steps.meta.outputs.push }}
+          registry: ghcr.io/komrad-company
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
