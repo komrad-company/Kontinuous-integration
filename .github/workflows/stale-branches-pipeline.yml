@@ -1,0 +1,82 @@
+name: Stale Branch Patrol
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+jobs:
+  patrol:
+    runs-on:
+      labels: komrad-runners
+    steps:
+      - name: Detect merged branches
+        id: detect
+        env:
+          GH_TOKEN: ${{ secrets.KOMRAD_GITHUB_TOKEN }}
+          ORG: komrad-company
+        run: |
+          total=0
+
+          while IFS= read -r repo; do
+            stale=""
+
+            while IFS= read -r branch; do
+              case "$branch" in
+                main|develop|HEAD) continue ;;
+              esac
+
+              count=$(gh pr list \
+                --repo "$ORG/$repo" \
+                --state merged \
+                --head "$branch" \
+                --limit 1 \
+                --json number \
+                --jq 'length' 2>/dev/null) || continue
+
+              if [ "$count" -gt 0 ]; then
+                stale="${stale}• \`${branch}\`\n"
+                total=$((total + 1))
+              fi
+            done < <(gh api "repos/$ORG/$repo/branches" --paginate --jq '.[].name' 2>/dev/null)
+
+            if [ -n "$stale" ]; then
+              printf '*%s*\n%b\n' "$repo" "$stale" >> /tmp/branch_report.txt
+            fi
+          done < <(gh api "orgs/$ORG/repos" --paginate \
+            --jq '.[] | select(.archived == false and .fork == false) | .name')
+
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+
+      - name: Send Slack report
+        if: steps.detect.outputs.total > 0
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          TOTAL: ${{ steps.detect.outputs.total }}
+        run: |
+          report=$(cat /tmp/branch_report.txt)
+          payload=$(jq -n \
+            --arg report "$report" \
+            --arg total "$TOTAL" \
+            '{
+              text: ("☭ BRANCH HYGIENE DECREE — " + $total + " branch(es) must be purged"),
+              blocks: [
+                {
+                  type: "header",
+                  text: {
+                    type: "plain_text",
+                    text: "☭ CENTRAL COMMITTEE — BRANCH HYGIENE DECREE"
+                  }
+                },
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: ("The following " + $total + " branch(es) have been merged and await deletion. The collective does not hoard dead code.\n\n" + $report)
+                  }
+                }
+              ]
+            }')
+          curl -s -X POST "$SLACK_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
