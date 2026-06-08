@@ -267,38 +267,25 @@ Installs `protobuf-compiler` via `apt`. Required before building any crate that 
 
 ### `container/buildah`
 
-Builds an OCI image with [Buildah](https://buildah.io) and optionally pushes it to a registry. The collective ships in containers, never in chaos. OCI-format by default; multi-platform via `platforms`. Source, revision and ref labels are stamped automatically.
+Builds an OCI image with [Buildah](https://buildah.io) and optionally pushes it to a registry. Always produces OCI-format images. Source, revision and ref labels are stamped automatically.
 
 | Input | Required | Default | Description |
 |---|---|---|---|
 | `image` | yes | — | Image name without registry or tag (e.g. `korelator`) |
 | `tags` | no | `latest` | Space-separated list of tags |
-| `containerfile` | no | `./Containerfile` | Path to the Containerfile or Dockerfile |
+| `containerfile` | no | `./Containerfile` | Path to the Containerfile |
 | `context` | no | `.` | Build context directory |
-| `build-args` | no | — | Newline-separated `KEY=value` build arguments |
 | `platforms` | no | `linux/amd64` | Comma-separated target platforms |
-| `labels` | no | — | Newline-separated OCI labels (added to the default source/revision/ref triplet) |
-| `oci` | no | `true` | Produce an OCI-format image instead of Docker v2 |
 | `push` | no | `false` | Push the image after build |
 | `registry` | no | — | Registry to push to (required when `push=true`) |
 | `username` | no | — | Registry username (required when `push=true`) |
 | `password` | no | — | Registry password or token (required when `push=true`) |
-
-| Output | Description |
-|---|---|
-| `image` | Image name produced by Buildah |
-| `tags` | Tags applied to the image |
-| `image-with-tag` | Fully-qualified reference of the first tag |
-| `digest` | Image digest reported by the registry after push |
-| `registry-path` | Registry path of the pushed image |
 
 ```yaml
 - uses: komrad-company/Kontinuous-integration/.github/actions/container/buildah@main
   with:
     image: korelator
     tags: ${{ github.ref_name }} latest
-    containerfile: ./Containerfile
-    platforms: linux/amd64,linux/arm64
     push: true
     registry: ghcr.io/komrad-company
     username: ${{ github.actor }}

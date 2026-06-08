@@ -1,99 +1,67 @@
 name: Container - Buildah
-description: "Build an OCI image with Buildah and optionally push it to a registry. The collective ships in containers, never in chaos."
+description: "Build an OCI image with Buildah and optionally push it to a registry."
 
 inputs:
-  image:
-    description: "Image name without registry or tag (e.g. korelator)"
-    required: true
-  tags:
-    description: "Space-separated list of tags to apply (e.g. 'latest v1.0.0')"
-    required: false
-    default: "latest"
-  containerfile:
-    description: "Path to the Containerfile or Dockerfile"
-    required: false
-    default: "./Containerfile"
-  context:
-    description: "Build context directory"
-    required: false
-    default: "."
-  build-args:
-    description: "Newline-separated KEY=value build arguments"
-    required: false
-    default: ""
-  platforms:
-    description: "Comma-separated list of target platforms (e.g. linux/amd64,linux/arm64)"
-    required: false
-    default: "linux/amd64"
-  labels:
-    description: "Newline-separated OCI labels (KEY=value). Defaults include source, revision and ref."
-    required: false
-    default: ""
-  oci:
-    description: "Produce an OCI-format image instead of Docker v2"
-    required: false
-    default: "true"
-  push:
-    description: "Push the image after build (true/false)"
-    required: false
-    default: "false"
-  registry:
-    description: "Registry to push to (required when push=true, e.g. ghcr.io/komrad-company)"
-    required: false
-    default: ""
-  username:
-    description: "Registry username (required when push=true)"
-    required: false
-    default: ""
-  password:
-    description: "Registry password or token (required when push=true)"
-    required: false
-    default: ""
-
-outputs:
-  image:
-    description: "Image name produced by Buildah"
-    value: ${{ steps.build.outputs.image }}
-  tags:
-    description: "Tags applied to the image"
-    value: ${{ steps.build.outputs.tags }}
-  image-with-tag:
-    description: "Fully-qualified reference of the first tag (image:tag)"
-    value: ${{ steps.build.outputs.image-with-tag }}
-  digest:
-    description: "Image digest reported by the registry after push (empty when push=false)"
-    value: ${{ steps.push.outputs.digest }}
-  registry-path:
-    description: "Registry path of the pushed image (empty when push=false)"
-    value: ${{ steps.push.outputs.registry-path }}
+    image:
+        description: "Image name without registry or tag (e.g. korelator)"
+        required: true
+    tags:
+        description: "Space-separated list of tags to apply"
+        required: false
+        default: "latest"
+    containerfile:
+        description: "Path to the Containerfile"
+        required: false
+        default: "./Containerfile"
+    context:
+        description: "Build context directory"
+        required: false
+        default: "."
+    platforms:
+        description: "Comma-separated target platforms"
+        required: false
+        default: "linux/amd64"
+    push:
+        description: "Push the image after build"
+        required: false
+        default: "false"
+    registry:
+        description: "Registry to push to (required when push=true)"
+        required: false
+        default: ""
+    username:
+        description: "Registry username (required when push=true)"
+        required: false
+        default: ""
+    password:
+        description: "Registry password or token (required when push=true)"
+        required: false
+        default: ""
 
 runs:
-  using: "composite"
-  steps:
-    - name: Build image with Buildah
-      id: build
-      uses: redhat-actions/buildah-build@v2
-      with:
-        image: ${{ inputs.image }}
-        tags: ${{ inputs.tags }}
-        containerfiles: ${{ inputs.containerfile }}
-        context: ${{ inputs.context }}
-        build-args: ${{ inputs.build-args }}
-        platforms: ${{ inputs.platforms }}
-        labels: |
-          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-          org.opencontainers.image.revision=${{ github.sha }}
-          org.opencontainers.image.ref.name=${{ github.ref_name }}
-          ${{ inputs.labels }}
-        oci: ${{ inputs.oci }}
+    using: "composite"
+    steps:
+        - name: Build image
+          id: build
+          uses: redhat-actions/buildah-build@v2
+          with:
+              image: ${{ inputs.image }}
+              tags: ${{ inputs.tags }}
+              containerfiles: ${{ inputs.containerfile }}
+              context: ${{ inputs.context }}
+              platforms: ${{ inputs.platforms }}
+              oci: true
+              labels: |
+                  org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+                  org.opencontainers.image.revision=${{ github.sha }}
+                  org.opencontainers.image.ref.name=${{ github.ref_name }}
 
-    - name: Push image to registry
-      id: push
-      if: ${{ inputs.push == 'true' }}
-      uses: redhat-actions/push-to-registry@v2
-      with:
-        image: ${{ steps.build.outputs.image }}
-        tags: ${{ steps.build.outputs.tags }}
-        registry: ${{ inputs.registry }}
-        username: ${{ inputs.username }}
-        password: ${{ inputs.password }}
+        - name: Push image
+          if: ${{ inputs.push == 'true' }}
+          uses: redhat-actions/push-to-registry@v2
+          with:
+              image: ${{ steps.build.outputs.image }}
+              tags: ${{ steps.build.outputs.tags }}
+              registry: ${{ inputs.registry }}
+              username: ${{ inputs.username }}
+              password: ${{ inputs.password }}
