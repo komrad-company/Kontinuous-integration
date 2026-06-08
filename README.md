@@ -17,6 +17,7 @@ your-repo/.github/workflows/ci.yml
     │            └── rust/release    (the binary is published. the tag is law.)
     ├── uses: security-pipeline.yml
     │            └── gitleaks        (no credential shall be committed)
+    ├── uses: stale-branches-pipeline.yml  (manual — purge list sent to Slack on demand)
     └── uses: notify-pipeline.yml
                  └── notify/slack    (failure is reported. always.)
 ```
@@ -85,6 +86,31 @@ jobs:
   security:
     uses: komrad-company/Kontinuous-integration/.github/workflows/security-pipeline.yml@main
 ```
+
+---
+
+### `stale-branches-pipeline.yml`
+
+Scans all active repositories in the `komrad-company` org, detects branches that have a merged PR and have not been deleted, and sends a Slack report. Triggered manually — run it when branch hygiene needs to be enforced.
+
+**How to trigger:**
+
+```
+GitHub → Actions → Stale Branch Patrol → Run workflow
+```
+
+Or via CLI:
+
+```bash
+gh workflow run stale-branches-pipeline.yml --repo komrad-company/Kontinuous-integration
+```
+
+| Secret | Required | Description |
+|---|---|---|
+| `KOMRAD_GITHUB_TOKEN` | yes | GitHub PAT with `repo` scope — used to list branches and PRs across the org |
+| `SLACK_WEBHOOK_URL` | yes | Slack incoming webhook URL for the report |
+
+The workflow skips `main` and `develop` branches. Only `feat/*`, `fix/*`, `issue/*` and similar are evaluated. If nothing stale is found, no Slack message is sent.
 
 ---
 
