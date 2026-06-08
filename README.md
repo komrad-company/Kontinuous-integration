@@ -12,6 +12,7 @@ your-repo/.github/workflows/ci.yml
     │            └── rust/geiger     (unsafe code is counted, not ignored)
     ├── uses: rust-pipeline.yml
     │            ├── rust/tests      (code that does not pass tests does not exist)
+    │            ├── rust/coverage   (untested code is accounted for. ignorance is not.)
     │            ├── rust/fmt        (the collective enforces a single formatting style)
     │            ├── rust/clippy     (warnings are errors. there are no warnings.)
     │            └── rust/release    (the binary is published. the tag is law.)
@@ -45,6 +46,7 @@ jobs:
 |---|---|---|
 | `test` | — | always |
 | `lint` | — | always |
+| `coverage` | `test` | always |
 | `release` | `lint`, `test` | tag push only |
 
 ---
@@ -182,6 +184,16 @@ jobs:
 ---
 
 ## Composite Actions
+
+### `rust/coverage`
+
+Generates an HTML coverage report via [`cargo-tarpaulin`](https://github.com/xd009642/tarpaulin). The report is uploaded as a GitHub Actions artifact named `coverage-report` and retained for 30 days. Coverage does not block the pipeline — it informs it.
+
+```yaml
+- uses: komrad-company/Kontinuous-integration/.github/actions/rust/coverage@main
+```
+
+---
 
 ### `rust/deny`
 
