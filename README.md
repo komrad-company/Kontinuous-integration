@@ -12,11 +12,16 @@ your-repo/.github/workflows/ci.yml
     │            └── rust/geiger     (unsafe code is counted, not ignored)
     ├── uses: rust-pipeline.yml
     │            ├── rust/tests      (code that does not pass tests does not exist)
+    │            ├── rust/coverage   (untested code is accounted for. ignorance is not.)
     │            ├── rust/fmt        (the collective enforces a single formatting style)
     │            ├── rust/clippy     (warnings are errors. there are no warnings.)
     │            └── rust/release    (the binary is published. the tag is law.)
     ├── uses: security-pipeline.yml
     │            └── gitleaks        (no credential shall be committed)
+    ├── uses: container-pipeline.yml
+    │            └── container/buildah  (the image is built. the tag is law.)
+    ├── uses: container-cleanup-pipeline.yml
+    │            └── GHCR API           (stale sha-* images are purged. the registry stays clean.)
     └── uses: notify-pipeline.yml
                  └── notify/slack    (failure is reported. always.)
 ```
@@ -41,6 +46,7 @@ jobs:
 |---|---|---|
 | `test` | — | always |
 | `lint` | — | always |
+| `coverage` | `test` | always |
 | `release` | `lint`, `test` | tag push only |
 
 ---
@@ -88,6 +94,75 @@ jobs:
 
 ---
 
+### `container-pipeline.yml`
+
+Builds and publishes OCI images via Buildah. Tag strategy is derived from the calling context — the collective does not guess what you intend to ship.
+
+| Trigger | Tags produced | Push |
+|---|---|---|
+| Pull request | — | no |
+| Push to `develop` | `sha-<short-sha>` | yes |
+| Tag `v*-rc.*` | `X.Y.Z-rc.N` | yes |
+| Tag `v*` | `X.Y.Z`, `X.Y`, `latest` | yes |
+
+**Job order:**
+
+| Job | Depends on | Condition |
+|---|---|---|
+| `container` | — | always |
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `image` | yes | — | Image name without registry or tag (e.g. `korelator`) |
+| `context` | no | `.` | Build context directory |
+| `containerfile` | no | `./Containerfile` | Path to the Containerfile |
+| `platforms` | no | `linux/amd64` | Comma-separated target platforms |
+
+The registry is fixed to `ghcr.io/komrad-company`. The caller must grant `packages: write`.
+
+```yaml
+jobs:
+  container:
+    permissions:
+      contents: read
+      packages: write
+    uses: komrad-company/Kontinuous-integration/.github/workflows/container-pipeline.yml@main
+    with:
+      image: korelator
+```
+
+---
+
+### `container-cleanup-pipeline.yml`
+
+Purges `sha-*` tagged images from GHCR older than a configurable retention window. Every development image not promoted to a release candidate within that window is considered expired. Run on a weekly schedule.
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `image` | yes | — | Image name to clean up (e.g. `korelator`) |
+| `days` | no | `30` | Delete `sha-*` images older than this many days |
+
+| Secret | Required | Description |
+|---|---|---|
+| `KOMRAD_GITHUB_TOKEN` | yes | GitHub PAT with `read:packages` and `delete:packages` scopes |
+
+```yaml
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+
+jobs:
+  cleanup:
+    uses: komrad-company/Kontinuous-integration/.github/workflows/container-cleanup-pipeline.yml@main
+    with:
+      image: korelator
+      days: 30
+    secrets:
+      KOMRAD_GITHUB_TOKEN: ${{ secrets.KOMRAD_GITHUB_TOKEN }}
+```
+
+---
+
 ### `notify-pipeline.yml`
 
 Transmits the pipeline status to Slack. Fires on any non-success outcome — failure or cancellation. Success is expected; it warrants no dispatch.
@@ -109,6 +184,16 @@ jobs:
 ---
 
 ## Composite Actions
+
+### `rust/coverage`
+
+Generates an HTML coverage report via [`cargo-tarpaulin`](https://github.com/xd009642/tarpaulin). The report is uploaded as a GitHub Actions artifact named `coverage-report` and retained for 30 days. Coverage does not block the pipeline — it informs it.
+
+```yaml
+- uses: komrad-company/Kontinuous-integration/.github/actions/rust/coverage@main
+```
+
+---
 
 ### `rust/deny`
 
@@ -192,6 +277,50 @@ Installs `protobuf-compiler` via `apt`. Required before building any crate that 
 
 ---
 
+### `container/buildah`
+
+Builds an OCI image with [Buildah](https://buildah.io) and optionally pushes it to a registry. The collective ships in containers, never in chaos. OCI-format by default; multi-platform via `platforms`. Source, revision and ref labels are stamped automatically.
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `image` | yes | — | Image name without registry or tag (e.g. `korelator`) |
+| `tags` | no | `latest` | Space-separated list of tags |
+| `containerfile` | no | `./Containerfile` | Path to the Containerfile or Dockerfile |
+| `context` | no | `.` | Build context directory |
+| `build-args` | no | — | Newline-separated `KEY=value` build arguments |
+| `platforms` | no | `linux/amd64` | Comma-separated target platforms |
+| `labels` | no | — | Newline-separated OCI labels (added to the default source/revision/ref triplet) |
+| `oci` | no | `true` | Produce an OCI-format image instead of Docker v2 |
+| `push` | no | `false` | Push the image after build |
+| `registry` | no | — | Registry to push to (required when `push=true`) |
+| `username` | no | — | Registry username (required when `push=true`) |
+| `password` | no | — | Registry password or token (required when `push=true`) |
+
+| Output | Description |
+|---|---|
+| `image` | Image name produced by Buildah |
+| `tags` | Tags applied to the image |
+| `image-with-tag` | Fully-qualified reference of the first tag |
+| `digest` | Image digest reported by the registry after push |
+| `registry-path` | Registry path of the pushed image |
+
+```yaml
+- uses: komrad-company/Kontinuous-integration/.github/actions/container/buildah@main
+  with:
+    image: korelator
+    tags: ${{ github.ref_name }} latest
+    containerfile: ./Containerfile
+    platforms: linux/amd64,linux/arm64
+    push: true
+    registry: ghcr.io/komrad-company
+    username: ${{ github.actor }}
+    password: ${{ secrets.GITHUB_TOKEN }}
+```
+
+Buildah must be available on the runner. The `komrad-runners` self-hosted runners provision it.
+
+---
+
 ### `notify/slack`
 
 Transmits an urgent dispatch to the Slack channel of the collective when the pipeline fails. If the webhook is absent, silence is maintained — but the failure is not forgotten.
@@ -214,6 +343,7 @@ Transmits an urgent dispatch to the Slack channel of the collective when the pip
 
 - **Self-hosted runner** — all jobs target the `komrad-runners` label. The collective runs on its own infrastructure.
 - **`SLACK_WEBHOOK_URL` secret** — optional. If absent, Slack notifications are silently skipped. The pipeline does not fail for lack of a webhook.
+- **`KOMRAD_GITHUB_TOKEN` secret** — required by `container-cleanup-pipeline.yml`. Must be a GitHub PAT with `read:packages` and `delete:packages` scopes. `GITHUB_TOKEN` cannot delete org-level packages and is not a substitute.
 
 ## License
 
