@@ -1,8 +1,6 @@
 name: Stale Branch Patrol
 
 on:
-  schedule:
-    - cron: '0 7 * * 1'
   workflow_dispatch:
 
 permissions:
