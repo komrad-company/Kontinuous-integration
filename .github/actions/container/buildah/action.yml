@@ -1,0 +1,67 @@
+name: Container - Buildah
+description: "Build an OCI image with Buildah and optionally push it to a registry."
+
+inputs:
+    image:
+        description: "Image name without registry or tag (e.g. korelator)"
+        required: true
+    tags:
+        description: "Space-separated list of tags to apply"
+        required: false
+        default: "latest"
+    containerfile:
+        description: "Path to the Containerfile"
+        required: false
+        default: "./Containerfile"
+    context:
+        description: "Build context directory"
+        required: false
+        default: "."
+    platforms:
+        description: "Comma-separated target platforms"
+        required: false
+        default: "linux/amd64"
+    push:
+        description: "Push the image after build"
+        required: false
+        default: "false"
+    registry:
+        description: "Registry to push to (required when push=true)"
+        required: false
+        default: ""
+    username:
+        description: "Registry username (required when push=true)"
+        required: false
+        default: ""
+    password:
+        description: "Registry password or token (required when push=true)"
+        required: false
+        default: ""
+
+runs:
+    using: "composite"
+    steps:
+        - name: Build image
+          id: build
+          uses: redhat-actions/buildah-build@v2
+          with:
+              image: ${{ inputs.image }}
+              tags: ${{ inputs.tags }}
+              containerfiles: ${{ inputs.containerfile }}
+              context: ${{ inputs.context }}
+              platforms: ${{ inputs.platforms }}
+              oci: true
+              labels: |
+                  org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+                  org.opencontainers.image.revision=${{ github.sha }}
+                  org.opencontainers.image.ref.name=${{ github.ref_name }}
+
+        - name: Push image
+          if: ${{ inputs.push == 'true' }}
+          uses: redhat-actions/push-to-registry@v2
+          with:
+              image: ${{ steps.build.outputs.image }}
+              tags: ${{ steps.build.outputs.tags }}
+              registry: ${{ inputs.registry }}
+              username: ${{ inputs.username }}
+              password: ${{ inputs.password }}
