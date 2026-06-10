@@ -62,40 +62,14 @@ jobs:
           echo "push=${push}" >> "$GITHUB_OUTPUT"
           echo "tags=${tags}" >> "$GITHUB_OUTPUT"
 
-      # Build with docker: the komrad-runners are ARC pods with a DinD
-      # sidecar — docker is the only build tool available there. The buildah
-      # composite action requires a host buildah binary and a privileged
-      # context; it returns once the runners ship a custom image.
-      - name: Login to registry
-        if: steps.meta.outputs.push == 'true'
-        env:
-          REGISTRY_TOKEN: ${{ github.token }}
-          REGISTRY_USER: ${{ github.actor }}
-        run: echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
-
-      - name: Build image
-        env:
-          IMAGE: ${{ inputs.image }}
-          TAGS: ${{ steps.meta.outputs.tags }}
-          CONTAINERFILE: ${{ inputs.containerfile }}
-          BUILD_CONTEXT: ${{ inputs.context }}
-          PLATFORMS: ${{ inputs.platforms }}
-        run: |
-          if [ "$PLATFORMS" != "linux/amd64" ]; then
-            echo "WARNING: docker single-platform build — '$PLATFORMS' ignored, building linux/amd64"
-          fi
-          tag_args=()
-          for t in $TAGS; do
-            tag_args+=(-t "ghcr.io/komrad-company/${IMAGE}:${t}")
-          done
-          docker build "${tag_args[@]}" -f "$CONTAINERFILE" "$BUILD_CONTEXT"
-
-      - name: Push image
-        if: steps.meta.outputs.push == 'true'
-        env:
-          IMAGE: ${{ inputs.image }}
-          TAGS: ${{ steps.meta.outputs.tags }}
-        run: |
-          for t in $TAGS; do
-            docker push "ghcr.io/komrad-company/${IMAGE}:${t}"
-          done
+      - uses: komrad-company/Kontinuous-integration/.github/actions/container/buildah@main
+        with:
+          image: ${{ inputs.image }}
+          tags: ${{ steps.meta.outputs.tags }}
+          containerfile: ${{ inputs.containerfile }}
+          context: ${{ inputs.context }}
+          platforms: ${{ inputs.platforms }}
+          push: ${{ steps.meta.outputs.push }}
+          registry: ghcr.io/komrad-company
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
