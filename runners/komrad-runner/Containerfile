@@ -1,0 +1,21 @@
+FROM ghcr.io/actions/actions-runner:latest
+
+USER root
+
+# Buildah for OCI image builds on unprivileged ARC pods:
+# - vfs storage driver + chroot isolation need no privileges, no /dev/fuse
+# - uidmap + subuid/subgid let rootless builds create multi-uid layers
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends buildah uidmap ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && echo "runner:100000:65536" > /etc/subuid \
+ && echo "runner:100000:65536" > /etc/subgid \
+ && mkdir -p /etc/containers \
+ && printf '{ "default": [ { "type": "insecureAcceptAnything" } ] }\n' > /etc/containers/policy.json \
+ && printf 'unqualified-search-registries = ["docker.io"]\n' > /etc/containers/registries.conf \
+ && printf '[storage]\ndriver = "vfs"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' > /etc/containers/storage.conf
+
+ENV BUILDAH_ISOLATION=chroot \
+    STORAGE_DRIVER=vfs
+
+USER runner

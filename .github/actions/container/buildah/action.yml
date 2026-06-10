@@ -38,30 +38,49 @@ inputs:
         required: false
         default: ""
 
+# Buildah is invoked directly under sudo: on the komrad-runners ARC pods the
+# runner user cannot use user namespaces (apparmor_restrict_unprivileged_userns
+# on the nodes), so builds run as root with CAP_SYS_ADMIN and chroot isolation.
+# The same invocation works unchanged on GitHub-hosted runners.
 runs:
     using: "composite"
     steps:
         - name: Build image
-          id: build
-          uses: redhat-actions/buildah-build@v2
-          with:
-              image: ${{ inputs.image }}
-              tags: ${{ inputs.tags }}
-              containerfiles: ${{ inputs.containerfile }}
-              context: ${{ inputs.context }}
-              platforms: ${{ inputs.platforms }}
-              oci: true
-              labels: |
-                  org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-                  org.opencontainers.image.revision=${{ github.sha }}
-                  org.opencontainers.image.ref.name=${{ github.ref_name }}
+          shell: bash
+          env:
+              IMAGE: ${{ inputs.image }}
+              TAGS: ${{ inputs.tags }}
+              CONTAINERFILE: ${{ inputs.containerfile }}
+              BUILD_CONTEXT: ${{ inputs.context }}
+              PLATFORMS: ${{ inputs.platforms }}
+              LABEL_SOURCE: ${{ github.server_url }}/${{ github.repository }}
+              LABEL_REVISION: ${{ github.sha }}
+              LABEL_REF: ${{ github.ref_name }}
+          run: |
+              tag_args=()
+              for t in $TAGS; do
+                tag_args+=(-t "${IMAGE}:${t}")
+              done
+              sudo buildah bud \
+                --format oci \
+                --isolation chroot \
+                --platform "$PLATFORMS" \
+                --label "org.opencontainers.image.source=$LABEL_SOURCE" \
+                --label "org.opencontainers.image.revision=$LABEL_REVISION" \
+                --label "org.opencontainers.image.ref.name=$LABEL_REF" \
+                -f "$CONTAINERFILE" "${tag_args[@]}" "$BUILD_CONTEXT"
 
         - name: Push image
           if: ${{ inputs.push == 'true' }}
-          uses: redhat-actions/push-to-registry@v2
-          with:
-              image: ${{ steps.build.outputs.image }}
-              tags: ${{ steps.build.outputs.tags }}
-              registry: ${{ inputs.registry }}
-              username: ${{ inputs.username }}
-              password: ${{ inputs.password }}
+          shell: bash
+          env:
+              IMAGE: ${{ inputs.image }}
+              TAGS: ${{ inputs.tags }}
+              REGISTRY: ${{ inputs.registry }}
+              REGISTRY_USERNAME: ${{ inputs.username }}
+              REGISTRY_PASSWORD: ${{ inputs.password }}
+          run: |
+              echo "$REGISTRY_PASSWORD" | sudo buildah login -u "$REGISTRY_USERNAME" --password-stdin "${REGISTRY%%/*}"
+              for t in $TAGS; do
+                sudo buildah push "${IMAGE}:${t}" "docker://${REGISTRY}/${IMAGE}:${t}"
+              done
