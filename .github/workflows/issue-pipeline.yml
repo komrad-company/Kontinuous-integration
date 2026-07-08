@@ -1,0 +1,40 @@
+name: Issue management
+
+on:
+  workflow_call:
+    secrets:
+      SLACK_SECURITY_WEBHOOK_URL:
+        required: false
+        description: "Slack webhook URL for the dedicated security channel"
+
+jobs:
+  assign:
+    runs-on:
+      labels: komrad-runners
+    permissions:
+      issues: write
+    steps:
+      - name: Assign from CODEOWNERS
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          owners=$(gh api "repos/$REPO/contents/CODEOWNERS" \
+            --jq '.content' | base64 -d \
+            | grep -E '^\*[[:space:]]' | head -1 \
+            | grep -oE '@[a-zA-Z0-9_-]+' | sed 's/@//' | paste -sd ',')
+          if [ -n "$owners" ]; then
+            gh issue edit "$ISSUE_NUMBER" \
+              --add-assignee "$owners" \
+              --repo "$REPO"
+          fi
+
+  notify-security:
+    runs-on:
+      labels: komrad-runners
+    if: contains(github.event.issue.labels.*.name, 'Warwatch') && !github.event.repository.private
+    steps:
+      - uses: komrad-company/Kontinuous-integration/.github/actions/notify/slack/issue@main
+        with:
+          webhook-url: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
