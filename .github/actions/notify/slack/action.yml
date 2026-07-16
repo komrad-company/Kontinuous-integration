@@ -15,7 +15,7 @@ runs:
   steps:
     - name: Send Slack notification
       if: ${{ inputs.webhook-url != '' }}
-      uses: slackapi/slack-github-action@v3.0.3
+      uses: slackapi/slack-github-action@v4.0.0
       with:
         webhook: ${{ inputs.webhook-url }}
         webhook-type: incoming-webhook
