@@ -8,7 +8,7 @@ jobs:
     runs-on:
       labels: komrad-runners
     container:
-      image: rust:1.95
+      image: rust:1.98
     steps:
       - uses: actions/checkout@v6
 
@@ -18,7 +18,7 @@ jobs:
     runs-on:
       labels: komrad-runners
     container:
-      image: rust:1.95
+      image: rust:1.98
     steps:
       - uses: actions/checkout@v6
 
@@ -32,7 +32,7 @@ jobs:
     runs-on:
       labels: komrad-runners
     container:
-      image: rust:1.95
+      image: rust:1.98
     needs:
       - lint
       - test
